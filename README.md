@@ -1,1 +1,1 @@
-# chessMania
+# Chess Mania
