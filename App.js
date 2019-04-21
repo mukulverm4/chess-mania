@@ -75,6 +75,27 @@ export default class App extends React.Component {
       return fenRowArray;
   }
 
+  _setCellPoints(piece, cell){
+  
+    if(typeof cell === 'undefined') {cell = {
+      primaryColorWeight:0,
+      secondaryColorWeight:0
+    }    }else{
+      console.log('cell previous weigths', JSON.stringify(cell))
+    }
+    if(piece.color === 'b'){
+      typeof cell.primaryColorWeight === 'undefined'
+        ? cell.primaryColorWeight = piecePoints[piece.type]
+        : cell.primaryColorWeight += piecePoints[piece.type];
+    }else{
+      typeof cell.secondaryColorWeight === 'undefined'
+        ? cell.secondaryColorWeight = piecePoints[piece.type]
+        : cell.secondaryColorWeight += piecePoints[piece.type];
+    }
+    return cell;
+
+  }
+
   _colorizeBoard(){
     let chess = Chess.Chess;
     let chessMania = new chess(this.state.currentGameFEN);
@@ -93,6 +114,7 @@ export default class App extends React.Component {
         //   }
           
         // }
+        console.log(JSON.stringify(piece))
         if(piece.type === 'r'){
           let row = currentCell[0];
           let column = currentCell[1];
@@ -104,37 +126,88 @@ export default class App extends React.Component {
           while(up<9){
             let newKey = row+up;
             console.log(newKey)
-            cellColor[newKey]=color1Palette[3];
-            if(chessMania.get(newKey)!=null) break;
+            cellColor[newKey] = this._setCellPoints(piece,cellColor[newKey]);
+            if(chessMania.get(newKey) != null) break;
             else  up++;
           }
           while(down>0){
             let newKey = row+down;
             console.log(newKey);
-            cellColor[newKey]=color1Palette[3];
+            cellColor[newKey] = this._setCellPoints(piece,cellColor[newKey]);
             if(chessMania.get(newKey)!=null) break;
             else  down--;
           }
           while(left > 0){
             let newKey = ALPHABETS[left]+column;
             console.log(newKey)
-            cellColor[newKey] = color1Palette[3];
+            cellColor[newKey] = this._setCellPoints(piece,cellColor[newKey]);
             if(chessMania.get(newKey)!=null) break;
             else left--; 
           }
           while(right < 9){
             let newKey = ALPHABETS[right]+column;
             console.log(newKey)
-            cellColor[newKey] = color1Palette[3];
+            cellColor[newKey] = this._setCellPoints(piece,cellColor[newKey]);
             if(chessMania.get(newKey)!=null) break;
             else right++; 
           }
+
+        }
+        if(piece.type === 'n'){  
+          let possibleMoves = this._getKnightMoves(piece, currentCell);
+          console.log('Knights possible moves =>', possibleMoves, currentCell)
+          console.log(cellColor[possibleMoves[i]]);
+          for(let i = 0; i < possibleMoves.length; i++){
+            cellColor[possibleMoves[i].substring(1,3)] = this._setCellPoints(piece, cellColor[possibleMoves[i]]);
+          }
+          // let row = currentCell[0];
+          // let column = currentCell[1];
+          // let up  = Number(column)+2;
+          // if(up<9){
+          //   let upLeft = ALPHABETS.indexOf(ROWS)-1;
+          //     if(upLeft>0){
+          //       let newKey = ALPHABETS[upLeft]+up;
+          //       if(piece.color === 'b'){
+          //         cellColor[newKey].primaryColorWeight += piecePoints['n']
+          //       }else{
+          //         cellColor[newKey].secondaryColorWeight += piecePoints['n']
+          //       }
+          //     }
+          //     let upRight = ALPHABETS.indexOf(ROWS)+1;
+          //     if(upRight<9){
+          //       let newKey = ALPHABETS[upRight]+up;
+          //       if(piece.color === 'b'){
+          //         cellColor[newKey].primaryColorWeight += piecePoints['n']
+          //       }else{
+          //         cellColor[newKey].secondaryColorWeight += piecePoints['n']
+          //       }
+          //     }
+            
+
+          // }
 
         }
       }
     }
 
     console.log('##### ', JSON.stringify(this.state.cellColor));
+
+  }
+
+  _getKnightMoves(piece, key){
+    let chess = Chess.Chess;
+    let tempChess = new chess();
+
+    tempChess.clear();
+    tempChess.put(piece, key);
+    console.log("turn => ",tempChess.turn());
+    if(piece.color === 'b'){
+      console.log("fen =>", tempChess.fen().replace('w','b'));
+      tempChess = new chess(tempChess.fen().replace('w','b'));
+    }
+    console.log("turn => ",tempChess.turn());
+
+    return tempChess.moves({square:key})
 
   }
 
@@ -158,7 +231,7 @@ export default class App extends React.Component {
           onPress={()=>this._onTouch(ALPHABETS[j]+(i+1))} 
           key={ALPHABETS[j]+(i+1)} 
           style={[this.state.from === ALPHABETS[j]+(i+1)|| this.state.to === ALPHABETS[j]+(i+1) ? styles.selectedCell:null, styles.cell,
-           this.state.cellColor[ALPHABETS[j]+(i+1)] != null ? {backgroundColor:this.state.cellColor[ALPHABETS[j]+(i+1)]}:null]}>
+           this.state.cellColor[ALPHABETS[j]+(i+1)] != null ? {backgroundColor:'#ff509a', opacity:this.state.cellColor[ALPHABETS[j]+(i+1)].primaryColorWeight}:null]}>
           {fenRowArray[ROWS-1-i][j]==="o"||fenRowArray[ROWS-1-i][j]=="1"?null:<Icon name={this._getPiece(fenRowArray[ROWS-1-i][j])} size={32}
            color={fenRowArray[ROWS-1-i][j] == (fenRowArray[ROWS-1-i][j]).toLowerCase()  ? "#f00" : "#0f0" }/>}
         </TouchableOpacity>)
