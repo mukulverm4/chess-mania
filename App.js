@@ -5,16 +5,17 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const ROWS = 8;
 const ALPHABETS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-const color1Palette = ['#ff65b7', '#ff93ce', '#ffc4e2', '#ffe6f3'];
+const pinkPalette = ['#ff509a', '#ff026d', '#ff1578', '#ff2983', '#ff3c8f'];
 const color2Palette = ['#6afdff', '#97feff', '#c8feff', '#e7feff'];
 const piecePoints = {
-  'q': 8,
+  'q': 9,
   'r': 5,
   'b': 3,
   'n': 3,
   'p': 1,
   'k': 0
 }
+const MAX_POINTS_VALUE = piecePoints.q + 2*piecePoints.r + 2*piecePoints.b +2*piecePoints.n+8*piecePoints.p + piecePoints.k;
 const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
   "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
   "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
@@ -130,7 +131,7 @@ export default class App extends React.Component {
 
         }
         if (piece.type === 'p') {
-          cellColor = this._colorizePawn(currentCell, cellColor, chessMania, piece, chess);
+          cellColor = this._colorizePawn(currentCell, cellColor,piece);
         }
       }
     }
@@ -139,24 +140,29 @@ export default class App extends React.Component {
 
   }
 
-  _colorizePawn(currentCell, cellColor, chessMania, piece, chess) {
-    let possibleMoves = [];
-   // console.log('piece coloe => ', piece.color)
-    if (piece.color !== chessMania.turn()) {
-      if (piece.color === 'w') {
-        let tempChess = new chess(this.state.currentGameFEN.replace('b', 'w'));
-        possibleMoves = tempChess.moves({ square: currentCell });
-       // console.log('poss move => ', possibleMoves);
-      } else {
-        let tempChess = new chess(this.state.currentGameFEN.replace('w', 'b'));
-        possibleMoves = tempChess.moves({ square: currentCell });
-      }
-    } else {
-      possibleMoves = chessMania.moves({ square: currentCell })
+  _colorizePawn(currentCell, cellColor, piece) {
+    let row = currentCell[0];
+    let column = currentCell[1];
+    if(piece.color === 'w'){
+      let up = Number(column) + 1;
+      let left = ALPHABETS.indexOf(row) - 1;
+      let right = ALPHABETS.indexOf(row) + 1;
+      console.log('pawn', ALPHABETS[left]+up)
+      if(left>0)
+        cellColor[ALPHABETS[left]+up] = this._setCellPoints(piece, cellColor[ALPHABETS[left]+up]);
+      if(right<9)
+        cellColor[ALPHABETS[right]+up] = this._setCellPoints(piece, cellColor[ALPHABETS[right]+up]);
+
+    }else{
+      let down = Number(column) -1;
+      let left = ALPHABETS.indexOf(row) - 1;
+      let right = ALPHABETS.indexOf(row) + 1;
+      if(left>0)
+        cellColor[ALPHABETS[left]+down] = this._setCellPoints(piece, cellColor[ALPHABETS[left]+down]);
+      if(right<9)
+        cellColor[ALPHABETS[right]+down] = this._setCellPoints(piece, cellColor[ALPHABETS[right]+down]);
     }
-    for (let i = 0; i < possibleMoves.length; i++) {
-      cellColor[possibleMoves[i]] = this._setCellPoints(piece, cellColor[possibleMoves[i]]);
-    }
+   
     return cellColor;
   }
   _colorizeRook(currentCell, cellColor, chessMania, piece) {
@@ -293,9 +299,14 @@ export default class App extends React.Component {
   _getCellBackgrounColor(cellColor) {
     let style = {}
     if (cellColor.primaryColorWeight > cellColor.secondaryColorWeight) {
-      style.backgroundColor = '#ff509a';
+      let b = (255-(50+Number(cellColor.primaryColorWeight)*5));
+      let g = (cellColor.primaryColorWeight + cellColor.secondaryColorWeight);
+      style.backgroundColor = 'rgb(255,'+g+','+b+')';
+      console.log(style.backgroundColor);
     } else {
-      style.backgroundColor = '#50f5ff';
+      let r = (255-(50+Number(cellColor.secondaryColorWeight)*5));
+      let g = r+60;
+      style.backgroundColor = 'rgb('+r+','+g+',255)';
     }
     return style;
   }
