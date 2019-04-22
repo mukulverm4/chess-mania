@@ -39,8 +39,14 @@ export default class App extends React.Component {
       gameOver: false,
       turn: chessMania.turn(),
       cellColor: {},
+      moveMade:false,
     }
 
+
+  }
+
+  componentWillMount(){
+    this._colorizeBoard();
   }
 
   _getFenArray() {
@@ -137,6 +143,7 @@ export default class App extends React.Component {
     }
 
     console.log('##### ', JSON.stringify(this.state.cellColor));
+    this.setState({cellColor:cellColor})
 
   }
 
@@ -192,7 +199,7 @@ export default class App extends React.Component {
       if (chessMania.get(newKey) != null) break;
       else down--;
     }
-    while (left > 0) {
+    while (left > -1) {
       let newKey = ALPHABETS[left] + column;
       if (chessMania.get(newKey) != null &&
         chessMania.get(newKey).color === piece.color &&
@@ -201,7 +208,7 @@ export default class App extends React.Component {
       if (chessMania.get(newKey) != null) break;
       else left--;
     }
-    while (right < 9) {
+    while (right < 8) {
       let newKey = ALPHABETS[right] + column;
       if (chessMania.get(newKey) != null &&
         chessMania.get(newKey).color === piece.color &&
@@ -224,7 +231,7 @@ export default class App extends React.Component {
 
     console.log(up, down, left, right)
 
-    while (up < 9 && right < 9) {
+    while (up < 9 && right < 8) {
       let newKey = ALPHABETS[right] + up;
       if (chessMania.get(newKey) != null &&
         chessMania.get(newKey).color === piece.color &&
@@ -238,7 +245,7 @@ export default class App extends React.Component {
     }
     up = Number(column) + 1;
     right = ALPHABETS.indexOf(row) + 1;
-    while (up < 9 && left > 0) {
+    while (up < 9 && left > -1) {
       let newKey = ALPHABETS[left] + up;
       if (chessMania.get(newKey) != null &&
         chessMania.get(newKey).color === piece.color &&
@@ -251,7 +258,7 @@ export default class App extends React.Component {
       }
     }
     left = ALPHABETS.indexOf(row) - 1;
-    while (down > 0 && left > 0) {
+    while (down > 0 && left > -1) {
       let newKey = ALPHABETS[left] + down;
       if (chessMania.get(newKey) != null &&
         chessMania.get(newKey).color === piece.color &&
@@ -264,7 +271,7 @@ export default class App extends React.Component {
       }
     }
     down = Number(column) - 1;
-    while (down > 0 && right < 9) {
+    while (down > 0 && right < 8) {
       let newKey = ALPHABETS[right] + down;
       if (chessMania.get(newKey) != null &&
         chessMania.get(newKey).color === piece.color &&
@@ -298,16 +305,22 @@ export default class App extends React.Component {
 
   _getCellBackgrounColor(cellColor) {
     let style = {}
-    if (cellColor.primaryColorWeight > cellColor.secondaryColorWeight) {
-      let b = (255-(50+Number(cellColor.primaryColorWeight)*5));
-      let g = (cellColor.primaryColorWeight + cellColor.secondaryColorWeight);
-      style.backgroundColor = 'rgb(255,'+g+','+b+')';
-      console.log(style.backgroundColor);
-    } else {
-      let r = (255-(50+Number(cellColor.secondaryColorWeight)*5));
-      let g = r+60;
-      style.backgroundColor = 'rgb('+r+','+g+',255)';
-    }
+    // if (cellColor.primaryColorWeight > cellColor.secondaryColorWeight) {
+    //   let b = (255-(50+Number(cellColor.primaryColorWeight)*5));
+    //   let g = b+60;
+    //   style.backgroundColor = 'rgb(255,'+g+','+b+')';
+    //   console.log(style.backgroundColor);
+    // } else {
+    //   let r = (255-(50+Number(cellColor.secondaryColorWeight)*5));
+    //   let g = r+60;
+    //   style.backgroundColor = 'rgb('+r+','+g+',255)';
+    // }
+    let b = (255-(50*(Number(cellColor.primaryColorWeight)/(Number(cellColor.primaryColorWeight)+1))+Number(cellColor.primaryColorWeight)*5));
+    let r = (255-(50*(Number(cellColor.secondaryColorWeight)/(Number(cellColor.secondaryColorWeight)+1))+Number(cellColor.secondaryColorWeight)*5));
+    let g = b>r?(r+60):(b+60);
+
+    style.backgroundColor = 'rgb('+r+','+g+','+b+')';
+    console.log(style.backgroundColor);
     return style;
   }
 
@@ -317,9 +330,7 @@ export default class App extends React.Component {
 
     let fenRowArray = this._getFenArray();
     const keys = [];
-    this._colorizeBoard();
-
-
+    
     for (let i = 0; i < ROWS; i++) {
       const cells = [];
 
@@ -388,7 +399,7 @@ export default class App extends React.Component {
     //throw new Error('Piece not found!');console.log("##########=> ", key)
   }
 
-  _makeMove() {
+  async _makeMove() {
     if (this.state.from !== '' && this.state.to !== '') {
       console.log(" made move => ", this.state.from, " to ", this.state.to);
       let chess = Chess.Chess;
@@ -401,7 +412,7 @@ export default class App extends React.Component {
       let currGame = chessMania.fen();
       console.log(currGame);
       let gameOver = chessMania.game_over();
-      this.setState({
+      await this.setState({
         from: '',
         to: '',
         currentGameFEN: currGame,
@@ -409,7 +420,7 @@ export default class App extends React.Component {
         turn: chessMania.turn(),
         cellColor: {}
       })
-
+      this._colorizeBoard();
 
     }
 
