@@ -415,8 +415,8 @@ export default class App extends React.Component {
 
   }
 
-  _resetBoard() {
-    this.setState({
+  async _resetBoard() {
+    await this.setState({
       currentGameFEN: this.state.resetGameFEN,
       cellColor: {}
     });
