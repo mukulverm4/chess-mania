@@ -5,8 +5,6 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const ROWS = 8;
 const ALPHABETS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-const pinkPalette = ['#ff509a', '#ff026d', '#ff1578', '#ff2983', '#ff3c8f'];
-const color2Palette = ['#6afdff', '#97feff', '#c8feff', '#e7feff'];
 const piecePoints = {
   'q': 9,
   'r': 5,
@@ -31,8 +29,9 @@ export default class App extends React.Component {
     let chess = Chess.Chess;
     let chessMania = new chess();
     let currentGameFEN = chessMania.fen();
-
+   
     this.state = {
+      resetGameFEN :currentGameFEN,
       currentGameFEN: currentGameFEN,
       from: '',
       to: '',
@@ -41,8 +40,6 @@ export default class App extends React.Component {
       cellColor: {},
       moveMade:false,
     }
-
-
   }
 
   componentWillMount(){
@@ -50,7 +47,7 @@ export default class App extends React.Component {
   }
 
   _getFenArray() {
-
+    
     let fen = this.state.currentGameFEN;
     let fenArray = (fen.split(" ")[0]).split("/");
     let fenRowArray = [];
@@ -90,9 +87,6 @@ export default class App extends React.Component {
         secondaryColorWeight: 0
       }
     }
-    // else {
-    //   console.log('cell previous weigths', JSON.stringify(cell))
-    // }
     if (piece.color === 'b') {
       typeof cell.primaryColorWeight === 'undefined'
         ? cell.primaryColorWeight = piecePoints[piece.type]
@@ -292,15 +286,10 @@ export default class App extends React.Component {
 
     tempChess.clear();
     tempChess.put(piece, key);
-    //console.log("turn => ", tempChess.turn());
     if (piece.color === 'b') {
-      //console.log("fen =>", tempChess.fen().replace('w', 'b'));
       tempChess = new chess(tempChess.fen().replace('w', 'b'));
     }
-    //console.log("turn => ", tempChess.turn());
-
     return tempChess.moves({ square: key })
-
   }
 
   _getCellBackgrounColor(cellColor) {
@@ -427,12 +416,11 @@ export default class App extends React.Component {
   }
 
   _resetBoard() {
-    let chess = Chess.Chess;
-    let chessMania = new chess();
     this.setState({
-      currentGameFEN: chessMania.fen(),
+      currentGameFEN: this.state.resetGameFEN,
       cellColor: {}
-    })
+    });
+    this._colorizeBoard();
   }
 
 
