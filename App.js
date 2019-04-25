@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, Dimensions, TouchableOpacity, Button } from 'react-native';
 import ChessMania from './src/components/ChessMania';
 import firebase from 'firebase';
+import { createBottomTabNavigator, createAppContainer, BottomTabBar } from 'react-navigation';
 
 export default class App extends React.Component {
   constructor() {
@@ -16,7 +17,11 @@ export default class App extends React.Component {
       storageBucket: "chess-menace.appspot.com",
       messagingSenderId: "31372489105"
     };
-    firebase.initializeApp(config);
+    var firebaseApp = require('firebase/app');
+    require('firebase/auth');
+    require('firebase/storage');
+    require('firebase/firestore');
+    firebaseApp.initializeApp(config);
     
     this.state = {
       user : ''
@@ -31,14 +36,14 @@ export default class App extends React.Component {
       // ...
       console.log("firebase error ", errorCode, errorMessage);
     });
-    
+
     firebase.auth().onAuthStateChanged((user)=>{
       if (user) {
         // User is signed in.
         var isAnonymous = user.isAnonymous;
         var uid = user.uid;
         this.setState({user:user})
-        console.log(user);
+       console.log(uid);
         // ...
       } else {
         // User is signed out.
@@ -52,11 +57,31 @@ export default class App extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <ChessMania/>
+        <BottomTabNav/>
       </View>
     );
   }
 }
+class OfflineGame extends React.Component{
+  render(){
+    return(
+      <ChessMania playMode="offline"/>
+    );
+  }
+}
+
+class OnlineGame extends React.Component{
+  render(){
+    return(
+      <ChessMania playMode="online"/>
+    );
+  }
+}
+
+const BottomTabNav = createAppContainer(createBottomTabNavigator({
+  Offline : OfflineGame,
+  Online : OnlineGame,
+}));
 
 const styles = StyleSheet.create({
   container: {

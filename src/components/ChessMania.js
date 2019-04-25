@@ -1,7 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, View, Dimensions, TouchableOpacity, Button } from 'react-native';
+import { StyleSheet, Text, View, Dimensions, TouchableOpacity, Button, Clipboard } from 'react-native';
 import Chess from 'chess.js';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import firebase from 'firebase';
+import { TextInput } from 'react-native-gesture-handler';
 
 const ROWS = 8;
 const ALPHABETS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -25,12 +27,11 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
 
 
   export default class ChessMania extends React.Component{
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
         let chess = Chess.Chess;
         let chessMania = new chess();
         let currentGameFEN = chessMania.fen();
-    
         this.state = {
           resetGameFEN: currentGameFEN,
           currentGameFEN: currentGameFEN,
@@ -40,11 +41,28 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
           turn: chessMania.turn(),
           cellColor: {},
           moveMade: false,
+          startGame: this.props.playMode === 'offline' ? true : false,
+          uid : '',
         }
       }
     
       componentWillMount() {
         this._colorizeBoard();
+        firebase.auth().onAuthStateChanged((user)=>{
+          if (user) {
+            // User is signed in.
+            var isAnonymous = user.isAnonymous;
+            uid = user.uid;
+            this.setState({
+              uid:uid
+            })
+          } else {
+            // User is signed out.
+            // ...
+            console.log("not signed in")
+          }
+          // ...
+        });
       }
     
       _getFenArray() {
@@ -56,7 +74,7 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
         for (let i = 0; i < fenArray.length; i++) {
           let tempArray = fenArray[i].split("");
           if (tempArray.length === ROWS)
-            fenRowArray[i] = tempArray;
+            fenRowArray[fenArray.length - i -1] = tempArray;
           else {
             tempRow = []
             let tempRowIndex = 0;
@@ -74,7 +92,7 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
                 tempRowIndex++;
               }
             }
-            fenRowArray[i] = tempRow;
+            fenRowArray[fenArray.length - i - 1] = tempRow;
           }
         }
         return fenRowArray;
@@ -108,7 +126,7 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
         for (let i = 0; i < BOARD_KEYS.length; i++) {
           let currentCell = BOARD_KEYS[i];
           let piece = chessMania.get(currentCell);
-    
+          //console.log("here 1",piece, currentCell)
           if (piece != null) {
             switch(piece.type){
               case 'r':{
@@ -140,7 +158,7 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
     
         
         await this.setState({ cellColor: cellColor })
-       // console.log('##### ', JSON.stringify(this.state.cellColor));
+       //console.log('##### ', JSON.stringify(this.state.cellColor));
       }
     
       _colorizePawn(currentCell, cellColor, piece) {
@@ -292,22 +310,10 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
     
       _getCellBackgroundColor(cellColor) {
         let style = {}
-        // if (cellColor.primaryColorWeight > cellColor.secondaryColorWeight) {
-        //   let b = (255-(50+Number(cellColor.primaryColorWeight)*5));
-        //   let g = b+60;
-        //   style.backgroundColor = 'rgb(255,'+g+','+b+')';
-        //   console.log(style.backgroundColor);
-        // } else {
-        //   let r = (255-(50+Number(cellColor.secondaryColorWeight)*5));
-        //   let g = r+60;
-        //   style.backgroundColor = 'rgb('+r+','+g+',255)';
-        // }
         let b = (255 - (50 * (Number(cellColor.primaryColorWeight) / (Number(cellColor.primaryColorWeight) + 1)) + Number(cellColor.primaryColorWeight) * 5));
         let r = (255 - (50 * (Number(cellColor.secondaryColorWeight) / (Number(cellColor.secondaryColorWeight) + 1)) + Number(cellColor.secondaryColorWeight) * 5));
         let g = b > r ? (r + 60) : (b + 60);
-    
         style.backgroundColor = 'rgb(' + r + ',' + g + ',' + b + ')';
-       
         return style;
       }
     
@@ -320,20 +326,21 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
     
         for (let i = 0; i < ROWS; i++) {
           const cells = [];
-    
+          //console.log(this.state.cellColor)
           for (let j = 0; j < ROWS; j++) {
-            let key = ALPHABETS[j] + (i + 1);
+            let key = ALPHABETS[j] + (ROWS - i);
             keys.push(key);
-            let cellBackgroundColor = this.state.cellColor[ALPHABETS[j] + (i + 1)] 
-              != null ? this._getCellBackgroundColor(this.state.cellColor[ALPHABETS[j] + (i + 1)]):null;
+            let cellBackgroundColor = this.state.cellColor[ALPHABETS[j] + (ROWS - i)] 
+              != null ? this._getCellBackgroundColor(this.state.cellColor[ALPHABETS[j] + (ROWS - i)]):null;
+            //  console.log(cellBackgroundColor)
             cells.push(
               <TouchableOpacity
-                onPress={() => this._onTouch(ALPHABETS[j] + (i + 1),cellBackgroundColor,this.state.cellColor[ALPHABETS[j] + (i + 1)])}
-                key={ALPHABETS[j] + (i + 1)}
+                onPress={() => this._onTouch(ALPHABETS[j] + (ROWS - i),cellBackgroundColor,this.state.cellColor[ALPHABETS[j] + (i + 1)])}
+                key={ALPHABETS[j] + (ROWS - i)}
                 style={[styles.cell,
                  cellBackgroundColor
-                 ,this.state.from === ALPHABETS[j] + (i + 1) ||
-                  this.state.to === ALPHABETS[j] + (i + 1) ?
+                 ,this.state.from === ALPHABETS[j] + (ROWS - i) ||
+                  this.state.to === ALPHABETS[j] + (ROWS - i) ?
                   {borderColor:'#10FF00'}: null]}>
                 {fenRowArray[ROWS - 1 - i][j] === "o" || fenRowArray[ROWS - 1 - i][j] == "1"
                   ? null : <Icon name={this._getPiece(fenRowArray[ROWS - 1 - i][j])} size={32}
@@ -354,7 +361,8 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
       _onTouch(key, backgroundColor, weight) {
         //console.log(backgroundColor , weight);
     
-        if (!this.state.gameOver) {
+        if (!this.state.gameOver && (this.props.playMode==='offline'||this.state.uid == this.state[this.state.turn])) {
+          
           let chess = Chess.Chess;
           let chessMania = new chess(this.state.currentGameFEN);
           if (chessMania.get(key) != null && chessMania.get(key).color === chessMania.turn()) {
@@ -409,33 +417,137 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
             cellColor: {}
           })
           this._colorizeBoard();
-    
+          
+          if(this.props.playMode === 'online'){
+            firestore = firebase.firestore(); 
+            firestore.collection("games").doc(this.state.gameID).set({
+              gameFEN:this.state.currentGameFEN,
+              turn : this.state.turn,
+            },{merge:true})
+          }
         }
       }
     
       async _resetBoard() {
         await this.setState({
           currentGameFEN: this.state.resetGameFEN,
-          cellColor: {}
+          cellColor: {},
+          startGame:this.props.playMode === 'offline'?true:false
         });
         this._colorizeBoard();
+
       }
-    
+
+      async _generateGame(){
+        let firestore = firebase.firestore();
+        
+        firestore.collection("games").add({
+            gameFEN :this.state.currentGameFEN,
+            turn : this.state.turn,
+            w : this.state.uid,
+            b : '',
+        })
+        .then((docRef)=> {
+            console.log("Document written with ID: ", docRef.id);
+            this.setState({gameID:docRef.id});
+            let  gameRef =  firestore.collection("games").doc(docRef.id);
+            gameRef.onSnapshot((doc) =>{
+            if (doc.exists) {
+                console.log("Document data:", doc.data());
+                this.setState({
+                  currentGameFEN:doc.data().gameFEN,
+                  turn : doc.data().turn,
+                  w : doc.data().w,
+                  b : doc.data().b,
+                })
+            } else {
+                // doc.data() will be undefined in this case
+                console.log("No such document!");
+            }
+        }).catch((error)=>{
+            console.log("Error getting document:", error);
+        });
+        })
+        this.setState({startGame:true})
+       
+      }
+
+      _joinGame(){
+        firestore = firebase.firestore();
+        console.log("game id=> ",this.state.gameID)
+        gameRef =  firestore.collection("games").doc(this.state.gameID);
+        gameRef.get().then((doc)=>{
+          if (doc.exists) {
+              if(doc.data().b === ''){
+                gameRef.set({
+                  b: this.state.uid
+                  }, { merge: true });
+              }
+          } else {
+              // doc.data() will be undefined in this case
+              console.log("No such document!");
+          }
+      }).catch(function(error) {
+          console.log("Error getting document here:", error);
+      });
+        
+      
+        gameRef.onSnapshot((doc) =>{
+            if (doc.exists) {
+                console.log("Document data:", doc.data());
+                this.setState({
+                  currentGameFEN:doc.data().gameFEN,
+                  startGame:true,
+                  turn : doc.data().turn,
+                  w : doc.data().w,
+                  b : doc.data().b,  
+                })
+            } else {
+                // doc.data() will be undefined in this case
+                console.log("No such document!");
+            }
+        });
+      }
+
+      _getConfirmButtonText(){
+        if(this.state.gameOver) return "GAME OVER" 
+        else if (this.props.playMode === 'offline' ||this.state.uid == this.state[this.state.turn]) 
+          return "PLAYER " + this.state.turn + " CONFIRM MOVE"
+        else return "WAITING..."
+      }
       render() {
         return (
-          <View style={styles.container}>
-            <View style={styles.chessBoard}>
-              {this._renderBoard()}
-            </View>
-            <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-              <TouchableOpacity style={styles.button} onPress={() => this._makeMove()}>
-                <Text style={styles.textCenter}>{this.state.gameOver ? "GAME OVER" : "PLAYER " + this.state.turn + " CONFIRM MOVE"} </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.button} onPress={() => this._resetBoard()}>
-                <Text style={styles.textCenter}>RESET</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+            <View style={styles.container}>
+            { this.state.startGame ? 
+                <View style={styles.container}>
+                    <View style={styles.chessBoard}>
+                        {this._renderBoard()}
+                    </View>
+                    <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                        <TouchableOpacity style={styles.button} onPress={() => this._makeMove()}>
+                            <Text style={styles.textCenter}>{this._getConfirmButtonText()} </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.button} onPress={() => this._resetBoard()}>
+                            <Text style={styles.textCenter}>RESET</Text>
+                        </TouchableOpacity>
+                        {this.props.playMode==='online'?<View>
+                        <TouchableOpacity onPress={()=>{Clipboard.setString(this.state.gameID)}}>
+                          <Text>Tap to copy Game ID : {this.state.gameID}</Text>
+                        </TouchableOpacity>
+                        <Text>{this.state.uid == this.state[this.state.turn]?"Your turn":"Waiting..."}</Text>
+                        </View>:null}
+                    </View>
+          </View>:<View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                        <TouchableOpacity style={styles.button} onPress={() => this._generateGame()}>
+                            <Text style={styles.textCenter}>Generate Game</Text>
+                        </TouchableOpacity>
+                        <TextInput placeholder="enter game id" style={styles.button} onChangeText={(text)=>{this.setState({gameID:text})}}></TextInput>
+                        <TouchableOpacity style={styles.button} onPress={() => this._joinGame()}>
+                            <Text style={styles.textCenter}>Join Game</Text>
+                        </TouchableOpacity>
+                    </View>
+        }
+        </View>
         );
       }
   }
@@ -465,7 +577,9 @@ const BOARD_KEYS = ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
       backgroundColor: '#000'
     },
     chessBoard: {
-      aspectRatio: 1
+      width:'95%',
+      aspectRatio: 1,
+      alignSelf:'center'
     },
     button: {
       alignSelf: 'center',
